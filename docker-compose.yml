@@ -1,0 +1,100 @@
+version: '2.0'
+#mysql mongo redis
+services:
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - /data/mongo/db:/data/db    #数据挂载本地
+    networks:
+      - app-net  
+    logging:  # 最好设置，因为数据库的日志占很大的内存，定期清理比较好
+        driver: "json-file"   # 设置日志格式
+        options:
+           max-size: "100m"  # 单个日志文件的最大内存
+           max-file: "3"   #最多保留几个文件，如果超多三个文件，会自动删除最早的一个
+    #environment:
+    #    MONGO_INITDB_ROOT_USERNAME: admin
+    #    MONGO_INITDB_ROOT_PASSWORD: pass
+                                                      
+
+  mongo-express:
+    depends_on:
+      - mongo
+    container_name: mongo-express
+    restart: always
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    networks:
+      - app-net
+    #environment:
+    #  ME_CONFIG_OPTIONS_EDITORTHEME: 3024-night
+    #  ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+    #  ME_CONFIG_MONGODB_ADMINPASSWORD: pass
+    #  ME_CONFIG_BASICAUTH_USERNAME: admin
+    #  ME_CONFIG_BASICAUTH_PASSWORD: pass
+        
+  redis:
+    image: redis
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - /data/redis:/data
+    networks:
+        - app-net
+        
+  
+  mysql:
+    image: mysql
+    container_name: mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - /data/mysql:/var/lib/mysql
+    networks:
+        - app-net
+    environment:
+        - MYSQL_ROOT_PASSWORD=123456  #设置root 用户密码
+        - MYSQL_DATABASE=testDB
+        - MYSQL_USER=userName
+        - MYSQL_PASSWORD=xxxxx
+        
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+        - app-net
+
+
+  phpredisadmin:
+    depends_on:
+      - redis
+    image: erikdubbelboer/phpredisadmin
+    container_name: phpredisadmin
+    restart: always
+    environment:
+      - ADMIN_USER=admin
+      - ADMIN_PASS=pass
+      - REDIS_1_HOST=redis
+      - REDIS_1_PORT=6379
+    ports:
+      - "8082:80"
+    networks:
+      - app-net
+
+
+networks:  #  设置网络，使当前配置中的container都处在同一个网络环境
+  app-net:
+    external: true
+
